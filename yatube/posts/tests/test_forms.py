@@ -26,33 +26,30 @@ class PostCreateFormTests(TestCase):
         )
 
     def setUp(self):
-        # Создаем авттизованный клиент
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
 
     def test_create_post(self):
-        """Передаем пост-запросом валидную форму нового поста, проверяем, как он там"""
+        """Передаем пост-запросом валидную форму нового поста,
+        проверяем, как он там"""
         posts_count = Post.objects.count()
         form_data = {
             'text': 'Тест формы пост 2',
             'group': PostCreateFormTests.group.id,
         }
-        # Отправляем POST-запрос
         response = self.authorized_client.post(
             reverse('posts:post_create'),
             data=form_data,
-           follow=True
+            follow=True
         )
-        # Проверяем, сработал ли редирект
-        self.assertRedirects(response, reverse('posts:profile', kwargs={'username': Post.objects.latest('id').author}))
-        # Проверяем, увеличилось ли число постов
+        self.assertRedirects(response, reverse('posts:profile',
+                             kwargs={'username':
+                                     Post.objects.latest('id').author}))
         self.assertEqual(Post.objects.count(), posts_count + 1)
-        # Проверяем, что создалась запись с заданным текстом
         self.assertTrue(
-            Post.objects.filter(
-                text='Тест формы пост 2',
-                group=PostCreateFormTests.group.id,
-                ).exists()
+            Post.objects.filter(text='Тест формы пост 2',
+                                group=PostCreateFormTests.group.id,
+                                ).exists()
         )
 
     def test_edit_post(self):

@@ -59,7 +59,7 @@ def post_detail(request, post_id):
 def post_create(request):
     if not(request.user.is_authenticated):
         return HttpResponseRedirect(reverse('users:signup',))
-                                   
+
     form = PostForm(request.POST or None)
     if form.is_valid():
         new_post = form.save(commit=False)

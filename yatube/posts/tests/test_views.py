@@ -25,8 +25,7 @@ class ViewsTest(TestCase):
         )
         cls.post_notauthor = Post.objects.create(
             author=cls.notauthoruser,
-            text='Второй пост, длина более 15 символов',
-            group=cls.group,
+            text='Второй пост, длина ыыболее 15 символов',
         )
 
     def setUp(self):
@@ -91,8 +90,7 @@ class ViewsTest(TestCase):
                 self.assertIsInstance(form_field, expected)
 
     def test_group_list_show_correct_context(self):
-        """Из вью group_list передается правильное количество
-        постов и правильное их содержание."""
+        """Из вью group_list передается правильный контекст."""
         response = self.authorized_client.get(reverse('posts:group',
                                               kwargs={'slug':
                                                       ViewsTest.group.slug
@@ -101,10 +99,9 @@ class ViewsTest(TestCase):
         self.check_posts_context(response.context, ViewsTest.post)
 
     def test_profile_show_correct_context(self):
-        """Из вью profile передается правильное количество
-        постов и правильное их содержание."""
+        """Из вью profile передается правильный контекст."""
         response = self.authorized_client.get(
             reverse('posts:profile',
-                    kwargs={'username': ViewsTest.notauthoruser.username}
+                    kwargs={'username': ViewsTest.authoruser.username}
                     ))
-        self.check_posts_context(response.context, ViewsTest.post_notauthor)
+        self.check_posts_context(response.context, ViewsTest.post)

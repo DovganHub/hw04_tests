@@ -7,48 +7,56 @@ from django import forms
 User = get_user_model()
 
 
-class TaskPagesTests(TestCase):
+class ViewsTest(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.user1 = User.objects.create_user(username='author')
-        cls.user2 = User.objects.create_user(username='notauthor')
+        cls.authoruser = User.objects.create_user(username='author')
+        cls.notauthoruser = User.objects.create_user(username='notauthor')
         cls.group = Group.objects.create(
             title='Тестовая группа',
             slug='test-slug',
             description='Тестовое описание',
         )
         cls.post = Post.objects.create(
-            author=cls.user1,
+            author=cls.authoruser,
             group=cls.group,
             text='Длина сообщения более 15 символов',
-            pk=0,
-
         )
-        cls.post2 = Post.objects.create(
-            author=cls.user2,
+        cls.post_notauthor = Post.objects.create(
+            author=cls.notauthoruser,
             text='Второй пост, длина более 15 символов',
-            pk=1,
-
+            group=cls.group,
         )
 
     def setUp(self):
         self.guest_client = Client()
         self.authorized_client = Client()
-        self.authorized_client.force_login(TaskPagesTests.user1)
+        self.authorized_client.force_login(ViewsTest.authoruser)
+
+    def check_posts_context(self, context, answer_post):
+        """Проверяет возвращаемый контекст"""
+        self.assertEqual(context['page_obj'][0].text, answer_post.text)
+        self.assertEqual(context['page_obj'][0].author, answer_post.author)
+        self.assertEqual(context['page_obj'][0].group, answer_post.group)
 
     def test_pages_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
         templates_pages_names = {
             reverse('posts:index'): 'posts/index.html',
             reverse('posts:group',
-                    kwargs={'slug': 'test-slug'}): 'posts/group_list.html',
+                    kwargs={'slug':
+                            ViewsTest.group.slug}): 'posts/group_list.html',
             reverse('posts:profile',
-                    kwargs={'username': 'author'}): 'posts/profile.html',
+                    kwargs={'username':
+                            ViewsTest.authoruser.username}
+                    ): 'posts/profile.html',
             reverse('posts:post_detail',
-                    kwargs={'post_id': '0'}): 'posts/post_detail.html',
+                    kwargs={'post_id': ViewsTest.post.pk}
+                    ): 'posts/post_detail.html',
             reverse('posts:post_edit',
-                    kwargs={'post_id': '0'}): 'posts/create_post.html',
+                    kwargs={'post_id': ViewsTest.post.pk}
+                    ): 'posts/create_post.html',
             reverse('posts:post_create'): 'posts/create_post.html',
         }
         for reverse_name, template in templates_pages_names.items():
@@ -71,7 +79,8 @@ class TaskPagesTests(TestCase):
     def test_posts_edit_show_correct_context(self):
         """Шаблон post_edit сформирован с правильным контекстом."""
         response = self.authorized_client.get(reverse('posts:post_edit',
-                                              kwargs={'post_id': '0'}))
+                                              kwargs={'post_id':
+                                                      ViewsTest.post.pk}))
         form_fields = {
             'text': forms.fields.CharField,
             'group': forms.models.ModelChoiceField,
@@ -85,59 +94,17 @@ class TaskPagesTests(TestCase):
         """Из вью group_list передается правильное количество
         постов и правильное их содержание."""
         response = self.authorized_client.get(reverse('posts:group',
-                                              kwargs={'slug': 'test-slug'}))
-        self.assertEqual(len(response.context['page_obj']), 1)
-        self.assertEqual(response.context['page_obj'][0].text,
-                         'Длина сообщения более 15 символов')
-        self.assertEqual(response.context['page_obj'][0].author,
-                         TaskPagesTests.user1)
+                                              kwargs={'slug':
+                                                      ViewsTest.group.slug
+                                                      })
+                                              )
+        self.check_posts_context(response.context, ViewsTest.post)
 
     def test_profile_show_correct_context(self):
         """Из вью profile передается правильное количество
         постов и правильное их содержание."""
-        response = self.authorized_client.get(reverse('posts:profile',
-                                              kwargs={'username': 'notauthor'
-                                                      }))
-        self.assertEqual(len(response.context['page_obj']), 1)
-        self.assertEqual(response.context['page_obj'][0].text,
-                         'Второй пост, длина более 15 символов')
-        self.assertEqual(response.context['page_obj'][0].author,
-                         TaskPagesTests.user2)
-
-    def test_create_post_index(self):
-        """При добавлении нового поста он появляется в response вью index"""
-        posts_counter_before = len(self.authorized_client.get(
-                                   reverse('posts:index')).context['page_obj'])
-        Post.objects.create(author=TaskPagesTests.user2, text='Новый пост',
-                            group=TaskPagesTests.group)
-        posts_counter_after = len(self.authorized_client.get(
-                                  reverse('posts:index')).context['page_obj'])
-        self.assertEqual(posts_counter_after, posts_counter_before + 1)
-
-    def test_create_post_group(self):
-        """При добавлении нового поста он появляется в response вью group"""
-        posts_counter_before = len(self.authorized_client.get(
-                                   reverse('posts:group',
-                                           kwargs={'slug': 'test-slug'}
-                                           )).context['page_obj'])
-        Post.objects.create(author=TaskPagesTests.user2, text='Новый пост',
-                            group=TaskPagesTests.group)
-        posts_counter_after = len(self.authorized_client.get(
-                                  reverse('posts:group',
-                                          kwargs={'slug': 'test-slug'}
-                                          )).context['page_obj'])
-        self.assertEqual(posts_counter_after, posts_counter_before + 1)
-
-    def test_create_post_profile(self):
-        """При добавлении нового поста он появляется в response вью profile"""
-        posts_counter_before = len(self.authorized_client.get(
-                                   reverse('posts:profile',
-                                           kwargs={'username': 'notauthor'}
-                                           )).context['page_obj'])
-        Post.objects.create(author=TaskPagesTests.user2, text='Новый пост',
-                            group=TaskPagesTests.group)
-        posts_counter_after = len(self.authorized_client.get(
-                                  reverse('posts:profile',
-                                          kwargs={'username': 'notauthor'}
-                                          )).context['page_obj'])
-        self.assertEqual(posts_counter_after, posts_counter_before + 1)
+        response = self.authorized_client.get(
+            reverse('posts:profile',
+                    kwargs={'username': ViewsTest.notauthoruser.username}
+                    ))
+        self.check_posts_context(response.context, ViewsTest.post_notauthor)

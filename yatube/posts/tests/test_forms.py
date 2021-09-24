@@ -19,12 +19,6 @@ class PostCreateFormTests(TestCase):
             description='Тестовое описание',
         )
 
-        cls.post = Post.objects.create(
-            author=cls.user,
-            text='Тест формы пост',
-            group=cls.group
-        )
-
     def setUp(self):
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
@@ -44,7 +38,7 @@ class PostCreateFormTests(TestCase):
         )
         self.assertRedirects(response, reverse('posts:profile',
                              kwargs={'username':
-                                     Post.objects.latest('id').author}))
+                                     self.user}))
         self.assertEqual(Post.objects.count(), posts_count + 1)
         self.assertTrue(
             Post.objects.filter(text='Тест формы пост 2',
@@ -54,7 +48,7 @@ class PostCreateFormTests(TestCase):
 
     def test_edit_post(self):
         """Редактируем пост и проверяем, изменился ли он"""
-        self.post = Post.objects.create(
+        post = Post.objects.create(
             text='Текст до редактирования',
             author=self.user,
         )
@@ -65,11 +59,11 @@ class PostCreateFormTests(TestCase):
         self.authorized_client.post(
             reverse('posts:post_edit',
                     kwargs={
-                        "post_id": self.post.id}),
+                        "post_id": post.id}),
             data=edited_form_data,
             follow=True
         )
 
         self.edited_post = get_object_or_404(Post.objects.filter(
-            id=self.post.id))
+            id=post.id))
         self.assertEqual(self.edited_post.text, 'Текст после редактирования')

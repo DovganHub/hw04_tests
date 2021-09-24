@@ -6,12 +6,13 @@ from .models import Post, Group
 from django.contrib.auth import get_user_model
 from .forms import PostForm
 from django.template import RequestContext
+from django.contrib.auth.decorators import login_required
 
 User = get_user_model()
 
 
 def index(request):
-    post_list = Post.objects.all().order_by('-pub_date')
+    post_list = Post.objects.all()
     paginator = Paginator(post_list, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -50,16 +51,13 @@ def profile(request, username):
 def post_detail(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
     context = {
-        'post_id': post_id,
         'post': post,
     }
     return render(request, 'posts/post_detail.html', context)
 
 
+@login_required
 def post_create(request):
-    if not(request.user.is_authenticated):
-        return HttpResponseRedirect(reverse('users:signup',))
-
     form = PostForm(request.POST or None)
     if form.is_valid():
         new_post = form.save(commit=False)
@@ -73,6 +71,7 @@ def post_create(request):
     return render(request, 'posts/create_post.html', context)
 
 
+@login_required
 def post_edit(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
     if request.user != post.author:

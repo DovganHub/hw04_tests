@@ -39,14 +39,14 @@ class TaskPagesTests(TestCase):
     def test_second_page_contains_three_records(self):
         """На второй странице 3 объекта"""
         url_names = [
-            reverse('posts:index') + '?page=2',
+            reverse('posts:index'),
             reverse('posts:group',
-                    kwargs={'slug': TaskPagesTests.group.slug}) + '?page=2',
+                    kwargs={'slug': TaskPagesTests.group.slug}),
             reverse('posts:profile',
                     kwargs={'username':
-                            TaskPagesTests.user.username}) + '?page=2'
+                            TaskPagesTests.user.username})
         ]
         for url in url_names:
             with self.subTest(url=url):
-                response = self.guest_client.get(url)
+                response = self.guest_client.get(url + '?page=2')
                 self.assertEqual(len(response.context['page_obj']), 3)

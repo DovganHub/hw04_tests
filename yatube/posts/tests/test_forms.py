@@ -2,8 +2,6 @@ from ..models import Group, Post
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
-from django.shortcuts import get_object_or_404
-
 
 User = get_user_model()
 
@@ -40,11 +38,11 @@ class PostCreateFormTests(TestCase):
                              kwargs={'username':
                                      self.user}))
         self.assertEqual(Post.objects.count(), posts_count + 1)
-        self.assertTrue(
-            Post.objects.filter(text='Тест формы пост 2',
-                                group=PostCreateFormTests.group.id,
-                                ).exists()
-        )
+        last_post = Post.objects.latest('id')
+        self.assertEqual(last_post.text, form_data['text'])
+        self.assertEqual(last_post.group.id, form_data['group'])
+        self.assertEqual(last_post.author.username,
+                         PostCreateFormTests.user.username)
 
     def test_edit_post(self):
         """Редактируем пост и проверяем, изменился ли он"""
@@ -59,11 +57,10 @@ class PostCreateFormTests(TestCase):
         self.authorized_client.post(
             reverse('posts:post_edit',
                     kwargs={
-                        "post_id": post.id}),
+                        'post_id': post.id}),
             data=edited_form_data,
             follow=True
         )
 
-        self.edited_post = get_object_or_404(Post.objects.filter(
-            id=post.id))
-        self.assertEqual(self.edited_post.text, 'Текст после редактирования')
+        edited_post = Post.objects.get(id=post.id)
+        self.assertEqual(edited_post.text, edited_form_data['text'])

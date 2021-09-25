@@ -1,4 +1,5 @@
 from django.test import Client, TestCase
+from django.urls import reverse
 
 
 class StaticURLTests(TestCase):
@@ -8,8 +9,8 @@ class StaticURLTests(TestCase):
     def test_aboutapp_urls_use_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
         templates_url_names = {
-            'about/tech.html': '/about/tech/',
-            'about/author.html': '/about/author/',
+            'about/tech.html': reverse('about:tech'),
+            'about/author.html': reverse('about:author'),
         }
         for template, url in templates_url_names.items():
             with self.subTest(url=url):
@@ -19,8 +20,8 @@ class StaticURLTests(TestCase):
     def test_aboutapp_urls_availability(self):
         """URL-адрес доступен."""
         url_names = [
-            '/about/tech/',
-            '/about/author/',
+            reverse('about:tech'),
+            reverse('about:author'),
         ]
 
         for url in url_names:

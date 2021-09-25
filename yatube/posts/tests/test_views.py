@@ -23,21 +23,17 @@ class ViewsTest(TestCase):
             group=cls.group,
             text='Длина сообщения более 15 символов',
         )
-        cls.post_notauthor = Post.objects.create(
-            author=cls.notauthoruser,
-            text='Второй пост, длина ыыболее 15 символов',
-        )
 
     def setUp(self):
         self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(ViewsTest.authoruser)
 
-    def check_posts_context(self, context, answer_post):
+    def check_posts_context(self, post):
         """Проверяет возвращаемый контекст"""
-        self.assertEqual(context['page_obj'][0].text, answer_post.text)
-        self.assertEqual(context['page_obj'][0].author, answer_post.author)
-        self.assertEqual(context['page_obj'][0].group, answer_post.group)
+        self.assertEqual(post.text, ViewsTest.post.text)
+        self.assertEqual(post.author, ViewsTest.post.author)
+        self.assertEqual(post.group, ViewsTest.post.group)
 
     def test_pages_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
@@ -96,7 +92,9 @@ class ViewsTest(TestCase):
                                                       ViewsTest.group.slug
                                                       })
                                               )
-        self.check_posts_context(response.context, ViewsTest.post)
+        self.check_posts_context(response.context['page_obj'][0])
+        self.assertEqual(response.context['page_obj'][0].group,
+                         ViewsTest.post.group)
 
     def test_profile_show_correct_context(self):
         """Из вью profile передается правильный контекст."""
@@ -104,4 +102,13 @@ class ViewsTest(TestCase):
             reverse('posts:profile',
                     kwargs={'username': ViewsTest.authoruser.username}
                     ))
-        self.check_posts_context(response.context, ViewsTest.post)
+        self.check_posts_context(response.context['page_obj'][0])
+        self.assertEqual(response.context['page_obj'][0].author,
+                         ViewsTest.post.author)
+
+    def test_profile_detail_context(self):
+        """"Из вью post_detail передается правильный контекст."""
+        response = self.authorized_client.get(reverse('posts:post_detail',
+                                              kwargs={'post_id':
+                                                      ViewsTest.post.pk}))
+        self.check_posts_context(response.context['post'])

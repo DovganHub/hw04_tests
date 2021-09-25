@@ -48,7 +48,7 @@ class StaticURLTests(TestCase):
         """
         response = self.guest_client.get(reverse('posts:post_create'))
         self.assertRedirects(
-            response, reverse('users:login') + '?next=/create/'
+            response, reverse('users:login')
         )
 
     def test_urls_uses_correct_template_authorized(self):

@@ -93,7 +93,7 @@ class ViewsTest(TestCase):
                                                       })
                                               )
         self.check_posts_context(response.context['page_obj'][0])
-        self.assertEqual(response.context['page_obj'][0].group,
+        self.assertEqual(response.context['group'],
                          ViewsTest.post.group)
 
     def test_profile_show_correct_context(self):
@@ -103,7 +103,7 @@ class ViewsTest(TestCase):
                     kwargs={'username': ViewsTest.authoruser.username}
                     ))
         self.check_posts_context(response.context['page_obj'][0])
-        self.assertEqual(response.context['page_obj'][0].author,
+        self.assertEqual(response.context['author'],
                          ViewsTest.post.author)
 
     def test_profile_detail_context(self):

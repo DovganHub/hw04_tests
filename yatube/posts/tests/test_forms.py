@@ -41,8 +41,8 @@ class PostCreateFormTests(TestCase):
         last_post = Post.objects.latest('id')
         self.assertEqual(last_post.text, form_data['text'])
         self.assertEqual(last_post.group.id, form_data['group'])
-        self.assertEqual(last_post.author.username,
-                         PostCreateFormTests.user.username)
+        self.assertEqual(last_post.author,
+                         PostCreateFormTests.user)
 
     def test_edit_post(self):
         """Редактируем пост и проверяем, изменился ли он"""

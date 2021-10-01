@@ -5,7 +5,6 @@ User = get_user_model()
 
 
 class Group(models.Model):
-
     title = models.CharField(max_length=200)
     description = models.TextField()
     slug = models.SlugField(max_length=20, unique=True, db_index=True)
@@ -56,7 +55,3 @@ class Comment(models.Model):
     )
 
     created = models.DateTimeField(auto_now_add=True)
-    #active = models.BooleanField(default=False)
-
-    # class Meta:
-    #     ordering = ['created']

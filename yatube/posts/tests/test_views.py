@@ -3,7 +3,7 @@ from django.http import response
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
-from ..models import Group, Post
+from ..models import Group, Post, Comment
 from django import forms
 
 User = get_user_model()
@@ -142,10 +142,36 @@ class ViewsTest(TestCase):
                 post = response.context.get('page_obj')[0]
                 self.assertEqual(post.image, ViewsTest.post.image)
 
-    def post_detail_image_is_there(self):
+    def test_post_detail_image_is_there(self):
         """"В шаблон post_detail передаётся картинка"""
         response = self.authorized_client.get(reverse('posts:post_detail',
                                               kwargs={'post_id':
                                                       ViewsTest.post.pk}))
         post = response.context.get('post')
         self.assertEqual(post.image, ViewsTest.post.image)
+
+    def test_auth_user_can_comment(self):
+        """После добавления коммент появляется и он ок"""
+        count = Comment.objects.count()
+        self.authorized_client.post(reverse('posts:add_comment',
+                                    kwargs={'post_id': ViewsTest.post.pk}),
+                                    {'text': 'Is that you, John Wayne?'}
+                                    )
+        self.guest_client.post(reverse('posts:add_comment',
+                                       kwargs={'post_id': ViewsTest.post.pk}),
+                               {'text': 'This is me!'}
+                               )
+        self.assertEqual(Comment.objects.count(), count + 1)
+
+    def test_new_comment_appears(self):
+        text = 'This is me!'
+        self.authorized_client.post(reverse('posts:add_comment',
+                                    kwargs={'post_id': ViewsTest.post.pk}),
+                                    {'text': text}
+                                    )
+        response = self.authorized_client.get(reverse('posts:post_detail',
+                                              kwargs={'post_id':
+                                                      ViewsTest.post.pk}
+                                                      ))
+        comment_from_response = response.context['comments'][0].text
+        self.assertEqual(comment_from_response, text)

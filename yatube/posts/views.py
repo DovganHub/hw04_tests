@@ -58,30 +58,7 @@ def post_detail(request, post_id):
         'comments': comments
     }
     return render(request, 'posts/post_detail.html', context)
-# def post_view(request, username, post_id):
-#     form = CommentForm(request.POST or None)
-#     author = get_object_or_404(User, username=username)
-#     post = get_object_or_404(Post, id=post_id, author__username=username)
-#     posts = author.posts.all()
-#     post_count = posts.count()
-#     comments = post.comments.all()
-#     context = {
-#         'post_count': post_count,
-#         'post': post,
-#         'author': author,
-#         'form': form,
-#         'post_view': True,
-#         'comments': comments
-#     }
-#     return render(request, 'post.html', context)
 
-# def post_detail(request, post_id):
-#     post = get_object_or_404(Post, pk=post_id)
-#     comments = post.comments.all()
-#     context = {
-#         'post': post,
-#     }
-#     return render(request, 'posts/post_detail.html', context)
 @login_required(redirect_field_name='')
 def post_create(request):
     form = PostForm(request.POST or None, files=request.FILES or None,)

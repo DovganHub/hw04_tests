@@ -26,7 +26,7 @@
 <div class="media card mb-4">
     <div class="media-body card-body">
         <h5 class="mt-0">
-            <a href="{% url 'profile' comment.author.username %}"
+            <a href="{% url 'posts:profile' comment.author.username %}"
                name="comment_{{ item.id }}">
                 {{ comment.author.username }}
             </a>

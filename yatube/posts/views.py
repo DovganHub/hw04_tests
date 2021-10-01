@@ -1,10 +1,10 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.core.paginator import Paginator
 from .models import Post, Group
 from django.contrib.auth import get_user_model
-from .forms import PostForm
+from .forms import PostForm, CommentForm
 from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
 
@@ -49,16 +49,42 @@ def profile(request, username):
 
 
 def post_detail(request, post_id):
+    form = CommentForm(request.POST or None)
     post = get_object_or_404(Post, pk=post_id)
+    comments = post.comments.all()
     context = {
         'post': post,
+        'form': form,
+        'comments': comments
     }
     return render(request, 'posts/post_detail.html', context)
+# def post_view(request, username, post_id):
+#     form = CommentForm(request.POST or None)
+#     author = get_object_or_404(User, username=username)
+#     post = get_object_or_404(Post, id=post_id, author__username=username)
+#     posts = author.posts.all()
+#     post_count = posts.count()
+#     comments = post.comments.all()
+#     context = {
+#         'post_count': post_count,
+#         'post': post,
+#         'author': author,
+#         'form': form,
+#         'post_view': True,
+#         'comments': comments
+#     }
+#     return render(request, 'post.html', context)
 
-
+# def post_detail(request, post_id):
+#     post = get_object_or_404(Post, pk=post_id)
+#     comments = post.comments.all()
+#     context = {
+#         'post': post,
+#     }
+#     return render(request, 'posts/post_detail.html', context)
 @login_required(redirect_field_name='')
 def post_create(request):
-    form = PostForm(request.POST or None)
+    form = PostForm(request.POST or None, files=request.FILES or None,)
     if form.is_valid():
         new_post = form.save(commit=False)
         new_post.author = request.user
@@ -70,14 +96,16 @@ def post_create(request):
     }
     return render(request, 'posts/create_post.html', context)
 
-
 @login_required
 def post_edit(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
     if request.user != post.author:
         return HttpResponseRedirect(reverse('posts:post_detail',
                                     args=[post_id]))
-    form = PostForm(request.POST or None, instance=post)
+    form = PostForm(request.POST or None,
+                    files=request.FILES or None,
+                    instance=post
+                    )
     if form.is_valid():
         form.save()
         return HttpResponseRedirect(reverse('posts:post_detail',
@@ -89,3 +117,14 @@ def post_edit(request, post_id):
     }
     return render(request, 'posts/create_post.html', context,
                   RequestContext(request))
+
+@login_required
+def add_comment(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    form = CommentForm(request.POST or None)
+    if form.is_valid():
+        comment = form.save(commit=False)
+        comment.author = request.user
+        comment.post = post
+        comment.save()
+    return redirect('posts:post_detail', post_id=post_id)

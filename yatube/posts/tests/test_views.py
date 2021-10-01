@@ -1,6 +1,8 @@
 from django.contrib.auth import get_user_model
+from django.http import response
 from django.test import Client, TestCase
 from django.urls import reverse
+from django.core.files.uploadedfile import SimpleUploadedFile
 from ..models import Group, Post
 from django import forms
 
@@ -18,10 +20,21 @@ class ViewsTest(TestCase):
             slug='test-slug',
             description='Тестовое описание',
         )
+        small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x00\x00\x00\x21\xf9\x04'
+            b'\x01\x0a\x00\x01\x00\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02'
+            b'\x02\x4c\x01\x00\x3b'
+        )
+        cls.new_image = SimpleUploadedFile(
+            name='new_image.png',
+            content=small_gif,
+            content_type='image/gif',
+        )
         cls.post = Post.objects.create(
             author=cls.authoruser,
             group=cls.group,
             text='Длина сообщения более 15 символов',
+            image=cls.new_image,
         )
 
     def setUp(self):
@@ -34,6 +47,7 @@ class ViewsTest(TestCase):
         self.assertEqual(post.text, ViewsTest.post.text)
         self.assertEqual(post.author, ViewsTest.post.author)
         self.assertEqual(post.group, ViewsTest.post.group)
+        self.assertEqual(post.image, ViewsTest.post.image)
 
     def test_pages_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
@@ -112,3 +126,26 @@ class ViewsTest(TestCase):
                                               kwargs={'post_id':
                                                       ViewsTest.post.pk}))
         self.check_posts_context(response.context['post'])
+
+    def test_image_is_there(self):
+        """В шаблон передается контекст с картинкой, а не хухры-мухры"""
+        names = [reverse('posts:index'),
+                 reverse('posts:group',
+                         kwargs={'slug': ViewsTest.group.slug}),
+                 reverse('posts:profile',
+                         kwargs={'username':
+                                 ViewsTest.authoruser.username}),
+                 ]
+        for name in names:
+            with self.subTest(reverse=reverse):
+                response = self.authorized_client.get(name)
+                post = response.context.get('page_obj')[0]
+                self.assertEqual(post.image, ViewsTest.post.image)
+
+    def post_detail_image_is_there(self):
+        """"В шаблон post_detail передаётся картинка"""
+        response = self.authorized_client.get(reverse('posts:post_detail',
+                                              kwargs={'post_id':
+                                                      ViewsTest.post.pk}))
+        post = response.context.get('post')
+        self.assertEqual(post.image, ViewsTest.post.image)

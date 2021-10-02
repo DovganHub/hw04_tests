@@ -5,6 +5,7 @@ from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 from ..models import Group, Post, Comment
 from django import forms
+from django.core.cache import cache
 
 User = get_user_model()
 
@@ -175,3 +176,17 @@ class ViewsTest(TestCase):
                                                       ))
         comment_from_response = response.context['comments'][0].text
         self.assertEqual(comment_from_response, text)
+
+    def test_cache(self):
+        """Берем респонз с главной страницы, запиливаем новый пост,
+        обновляем респонз с главной страницы, смотрим, появился ли он там,
+        если нет - ок. Дальше чистим кэш и снова далем запрос - пост появился-
+        кэш работает.
+        """
+        response_old = self.guest_client.get(reverse('posts:index'))
+        Post.objects.create(text='test2', author=ViewsTest.authoruser)
+        response_new = self.guest_client.get(reverse('posts:index'))
+        cache.clear()
+        response_cash_clr = self.guest_client.get(reverse('posts:index'))
+        self.assertEqual(response_old.content, response_new.content)
+        self.assertNotEqual(response_new.content, response_cash_clr.content)
